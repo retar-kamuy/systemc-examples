@@ -1,0 +1,8 @@
+*.o
+*.d
+*.vcd
+*.bin
+*.elf
+*.hex
+*.map
+testbench_*/
