@@ -1,6 +1,6 @@
 
 RISCV_GNU_TOOLCHAIN_GIT_REVISION = 411d134
-RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv32
+RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX = /opt/riscv32imc
 
 # Give the user some easy overrides for local configuration quirks.
 # If you change one of these and it breaks, then you get to keep both pieces.
@@ -15,11 +15,17 @@ TEST_OBJS = $(addsuffix .o,$(basename $(wildcard tests/*.S)))
 FIRMWARE_OBJS = firmware/start.o firmware/irq.o firmware/print.o firmware/hello.o firmware/sieve.o firmware/multest.o firmware/stats.o
 GCC_WARNS  = -Werror -Wall -Wextra -Wshadow -Wundef -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings
 GCC_WARNS += -Wredundant-decls -Wstrict-prototypes -Wmissing-prototypes -pedantic # -Wconversion
-TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)i/bin/riscv32-unknown-elf-
-COMPRESSED_ISA = C
+TOOLCHAIN_PREFIX = $(RISCV_GNU_TOOLCHAIN_INSTALL_PREFIX)/bin/riscv32-unknown-elf-
+COMPRESSED_ISA = C	# Remove for izssue #210
 
 # Add things like "export http_proxy=... https_proxy=..." here
 GIT_ENV = true
+
+export PATH := /opt/verilator/bin:/opt/iverilog/bin:${PATH}
+export SYSTEMC_HOME := /opt/systemc
+export SYSTEMC_INCLUDE := ${SYSTEMC_HOME}/include
+export SYSTEMC_LIBDIR := ${SYSTEMC_HOME}/lib-linux64
+export LD_LIBRARY_PATH := ${SYSTEMC_LIBDIR}:${LD_LIBRARY_PATH}
 
 test: testbench.vvp firmware/firmware.hex
 	$(VVP) -N $<
@@ -54,6 +60,15 @@ test_synth: testbench_synth.vvp firmware/firmware.hex
 test_verilator: testbench_verilator firmware/firmware.hex
 	./testbench_verilator
 
+test_verilator_vcd: testbench_verilator firmware/firmware.hex
+	./testbench_verilator +vcd
+
+test_verilator_sc: testbench_verilator_sc firmware/firmware.hex
+	./testbench_verilator_sc
+
+test_verilator_sc_vcd: testbench_verilator_sc firmware/firmware.hex
+	./testbench_verilator_sc +vcd
+
 testbench.vvp: testbench.v picorv32.v
 	$(IVERILOG) -o $@ $(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) $^
 	chmod -x $@
@@ -79,10 +94,16 @@ testbench_synth.vvp: testbench.v synth.v
 	chmod -x $@
 
 testbench_verilator: testbench.v picorv32.v testbench.cc
-	$(VERILATOR) --cc --exe -Wno-lint -trace --top-module picorv32_wrapper testbench.v picorv32.v testbench.cc \
+	$(VERILATOR) --cc --exe -Wno-lint --trace --top-module picorv32_wrapper testbench.v picorv32.v testbench.cc \
 			$(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) --Mdir testbench_verilator_dir
 	$(MAKE) -C testbench_verilator_dir -f Vpicorv32_wrapper.mk
 	cp testbench_verilator_dir/Vpicorv32_wrapper testbench_verilator
+
+testbench_verilator_sc: testbench.v picorv32.v testbench_sc.cpp
+	$(VERILATOR) --sc --exe -Wno-lint --trace --top-module picorv32_wrapper testbench.v picorv32.v testbench_sc.cpp \
+			$(subst C,-DCOMPRESSED_ISA,$(COMPRESSED_ISA)) --Mdir testbench_verilator_sc_dir
+	$(MAKE) -C testbench_verilator_sc_dir -f Vpicorv32_wrapper.mk
+	cp testbench_verilator_sc_dir/Vpicorv32_wrapper testbench_verilator_sc
 
 check: check-yices
 
