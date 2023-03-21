@@ -21,11 +21,11 @@ int sc_main(int argc, char** argv) {
     top->trace_valid(trace_valid);
     top->trace_data(trace_data);
 
-	sc_start(1, SC_NS);
-
 	// Tracing (vcd)
 	VerilatedVcdSc* tfp = NULL;
-    const char* flag_vcd = Verilated::commandArgsPlusMatch("vcd");
+	// If verilator was invoked with --trace argument,
+	// and if at run time passed the +vcd argument, turn on tracing
+    const char* flag_vcd = Verilated::commandArgsPlusMatch("trace");
 	if (flag_vcd && 0==strcmp(flag_vcd, "+vcd")) {
 		Verilated::traceEverOn(true);
 		tfp = new VerilatedVcdSc;
