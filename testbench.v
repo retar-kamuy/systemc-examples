@@ -268,7 +268,11 @@ module picorv32_wrapper #(
 				$display("ERROR!");
 				if ($test$plusargs("noerror"))
 					$finish;
-				$stop;
+				`ifndef VERILATOR
+					$stop;
+				`else
+					$finish;
+				`endif
 			end
 		end
 	end
