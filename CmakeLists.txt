@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.22)
+project(hello_test CXX)
+
+find_package(GTest REQUIRED)
+
+enable_testing()
+
+# include_directories(${CMAKE_SOURCE_DIR}/inc)
+link_directories(googletest/build/lib)
+
+add_executable(
+  hello_test
+  hello_test.cc
+)
+
+target_link_libraries(
+  hello_test
+  GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(hello_test)
